@@ -3,6 +3,7 @@ from stlib3.scene import Scene
 
 from elements.object.object import Object
 from elements.sensor.membrane import Membrane
+from elements.sensor.shell import Shell
 
 
 def createScene(rootNode):
@@ -72,19 +73,14 @@ def createScene(rootNode):
 
     # scene.Modelling.addChild(floor)
 
-    shell = Object(
-        name="Shell",
-        meshPath="../data/mesh/sensor/Shell-Low.stl",
+    shell = Shell(
         scale3d=[0.5, 0.5, 0.5],
         color=[1.0, 1.0, 1.0, 1.0],
-        isStatic=True,
     )
 
     scene.Modelling.addChild(shell)
 
     membrane = Membrane(
-        name="Membrane",
-        meshPath="../data/mesh/sensor/Membrane-High.stl",
         scale3d=[0.5, 0.5, 0.5],
         color=[135.0 / 255.0, 133.0 / 255.0, 147.0 / 255.0, 1.0],
     )

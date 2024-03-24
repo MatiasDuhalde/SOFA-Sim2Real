@@ -2,21 +2,22 @@ import Sofa
 
 
 def Membrane(
-    name="Membrane",
-    meshPath="",
     rotation=[0.0, 0.0, 0.0],
     translation=[0.0, 0.0, 0.0],
     scale3d=[1.0, 1.0, 1.0],
     color=[1.0, 1.0, 1.0, 1.0],
     collisionGroup="",
 ):
-    self = Sofa.Core.Node(name)
+    self = Sofa.Core.Node("Membrane")
+
+    femMeshPath = "../data/mesh/sensor/Low-Even-Mesh.msh"
+    visualMeshPath = "../data/mesh/sensor/Low-Even-Mesh.stl"
 
     mechanicalModel = self.addChild("MechanicalModel")
     mechanicalModel.addObject(
-        "MeshSTLLoader",
+        "MeshGmshLoader",
         name="loader",
-        filename=meshPath,
+        filename=femMeshPath,
         rotation=rotation,
         translation=translation,
         scale3d=scale3d,
@@ -36,7 +37,7 @@ def Membrane(
 
     # ForceField components
     mechanicalModel.addObject(
-        "TriangleFEMForceField",
+        "TetrahedronFEMForceField",
         name="linearElasticBehavior",
         youngModulus=250,
         poissonRatio=0.45,
@@ -47,7 +48,7 @@ def Membrane(
     collisionModel.addObject(
         "MeshSTLLoader",
         name="loader",
-        filename=meshPath,
+        filename=visualMeshPath,
         rotation=rotation,
         translation=translation,
         scale3d=scale3d,
@@ -66,7 +67,7 @@ def Membrane(
     visualModel.addObject(
         "MeshSTLLoader",
         name="loader",
-        filename=meshPath,
+        filename=visualMeshPath,
         rotation=rotation,
         translation=translation,
         scale3d=scale3d,
