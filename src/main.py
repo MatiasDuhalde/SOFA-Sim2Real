@@ -52,10 +52,10 @@ def createScene(rootNode):
     sphere = Sphere(
         None,
         name="Sphere",
-        translation=[0.0, 3.5, 0.0],
-        uniformScale=0.5,
+        translation=[0.0, 18.0, 0.0],
+        uniformScale=3.0,
         isAStaticObject=False,
-        totalMass=10.0,
+        totalMass=0.032,
     )
     sphere.addObject("UncoupledConstraintCorrection")
 
@@ -74,8 +74,8 @@ def createScene(rootNode):
 
     shell = Object(
         name="Shell",
-        meshPath="../data/mesh/sensor/Shell.stl",
-        scale3d=[100.0, 100.0, 100.0],
+        meshPath="../data/mesh/sensor/Shell-Low.stl",
+        scale3d=[0.5, 0.5, 0.5],
         color=[1.0, 1.0, 1.0, 1.0],
         isStatic=True,
     )
@@ -84,8 +84,8 @@ def createScene(rootNode):
 
     membrane = Membrane(
         name="Membrane",
-        meshPath="../data/mesh/sensor/Membrane.stl",
-        scale3d=[100.0, 100.0, 100.0],
+        meshPath="../data/mesh/sensor/Membrane-High.stl",
+        scale3d=[0.5, 0.5, 0.5],
         color=[135.0 / 255.0, 133.0 / 255.0, 147.0 / 255.0, 1.0],
     )
 
