@@ -29,13 +29,20 @@ def createScene(rootNode):
         "Sofa.Component.Mass",
         "Sofa.Component.SolidMechanics.FEM.Elastic",
         "Sofa.Component.MechanicalLoad",
+        "Sofa.Component.Engine.Select",
+        "Sofa.Component.LinearSolver.Direct",
     ]
 
-    scene = Scene(rootNode, plugins=plugins)
+    scene = Scene(rootNode, gravity=[0.0, -9810, 0.0], plugins=plugins, iterative=False)
     scene.addMainHeader()
+    scene.addObject("DefaultAnimationLoop")
     scene.addObject("DefaultVisualManagerLoop")
+    scene.Simulation.addObject("GenericConstraintCorrection")
     scene.addContact(alarmDistance=0.1, contactDistance=0.01, frictionCoef=1.0)
-    scene.VisualStyle.displayFlags = "showVisual showBehavior showCollisionModels"
+    scene.VisualStyle.displayFlags = "hideVisual showBehavior showCollisionModels"
+
+    scene.Settings.mouseButton.stiffness = 10
+    scene.dt = 0.01
 
     # coin = Object(
     #     name="Coin",
@@ -50,17 +57,17 @@ def createScene(rootNode):
 
     # scene.Modelling.addChild(coin)
 
-    sphere = Sphere(
-        None,
-        name="Sphere",
-        translation=[0.0, 18.0, 0.0],
-        uniformScale=3.0,
-        isAStaticObject=False,
-        totalMass=0.032,
-    )
-    sphere.addObject("UncoupledConstraintCorrection")
+    # sphere = Sphere(
+    #     None,
+    #     name="Sphere",
+    #     translation=[0.0, 40.0, 0.0],
+    #     uniformScale=6.0,
+    #     isAStaticObject=False,
+    #     totalMass=0.032,
+    # )
+    # sphere.addObject("UncoupledConstraintCorrection")
 
-    scene.Modelling.addChild(sphere)
+    # scene.Modelling.addChild(sphere)
 
     # floor = Floor(
     #     None,
@@ -74,17 +81,16 @@ def createScene(rootNode):
     # scene.Modelling.addChild(floor)
 
     shell = Shell(
-        scale3d=[0.5, 0.5, 0.5],
         color=[1.0, 1.0, 1.0, 1.0],
     )
 
     scene.Modelling.addChild(shell)
 
     membrane = Membrane(
-        scale3d=[0.5, 0.5, 0.5],
         color=[135.0 / 255.0, 133.0 / 255.0, 147.0 / 255.0, 1.0],
     )
 
-    scene.Modelling.addChild(membrane)
+    # scene.Modelling.addChild(membrane)
+    scene.Simulation.addChild(membrane)
 
     return rootNode
