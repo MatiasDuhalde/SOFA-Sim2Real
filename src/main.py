@@ -85,13 +85,26 @@ def createScene(rootNode):
         SensorController(name="SensorController", sensor=sensor, node=rootNode)
     )
 
-    # Add static camera to look at the bottom of the sensor
-    scene.addObject(
-        "Camera",
-        position=[0.0, 0.1, 0.0],
-        orientation=[0.0, 0.0, 0.0],
-        fieldOfView=90.0,
-    )
+    # # Add interactive camera
+    # scene.addObject(
+    #     "InteractiveCamera",
+    #     position=[0.0, 0.0, 0.0],
+    #     orientation=[0.0, 0.0, 0.0, 1.0],
+    #     distance=[0.0, 0.0, 0.0],
+    #     fieldOfView=45.0,
+    #     zNear=0.0,
+    #     zFar=0.0,
+    # )
+
+    # # Add static camera to look at the bottom of the sensor
+    # scene.addObject(
+    #     "Camera",
+    #     position=[90.0, 0.0, 0.0],
+    #     orientation=[90.0, 0.0, 0.0, 1.0],
+    #     distance=[0.0, 0.0, 0.0],
+    #     fieldOfView=90.0,
+    #     projectionType="Orthographic",
+    # )
 
     # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
 
@@ -136,11 +149,11 @@ def createScene(rootNode):
     #     isAStaticObject=True,
     # )
 
-    controller = ObjectController(
-        name="SphereController", node=rootNode, object=sphere.mstate
-    )
+    # controller = ObjectController(
+    #     name="SphereController", node=rootNode, object=sphere.mstate
+    # )
 
-    scene.addObject(controller)
+    # scene.addObject(controller)
 
     # scene.Modelling.addChild(floor)
 

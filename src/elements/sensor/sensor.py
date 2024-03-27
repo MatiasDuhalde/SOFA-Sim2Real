@@ -2,7 +2,9 @@ import math
 from gettext import translation
 from os import path
 
+import numpy as np
 import Sofa
+from PIL import Image
 from splib3.constants import Key
 from stlib3.components import addOrientedBoxRoi
 from stlib3.physics.collision import CollisionMesh
@@ -217,4 +219,87 @@ class SensorController(Sofa.Core.Controller):
         if key == Key.P:
             print("P key pressed")
             indexes = self.sensor.getMembraneBottomIndexes()
-            print(len(indexes))
+            positions = self.sensor.Membrane.Membrane.dofs.position.value
+            bottomValues = [positions[i] for i in indexes]
+            # Dump to file
+            with open("depth_map_points.txt", "w") as f:
+                for item in bottomValues:
+                    f.write(",".join([str(i) for i in item]) + "\n")
+
+            # Generate depth map
+            depth_map = self.map_to_image(np.array(bottomValues), 256)
+            depth_map = Image.fromarray((depth_map * 255).astype(np.uint8))
+            depth_map.save("depth_map.png")
+
+    def nearest_neighbor(self, data, i, j):
+        """
+        Finds the nearest neighbor (X, Z) coordinates in the data for a given point.
+
+        Args:
+            data: A NumPy array of shape (N, 3) containing triplets of (X, Y, Z) values.
+            i: The x-coordinate of the desired point.
+            j: The y-coordinate of the desired point.
+
+        Returns:
+            A tuple containing the (X, Y, Z) values of the nearest neighbor.
+        """
+        print(i, j)
+        # Calculate Euclidean distances between the point and all triplets
+        distances = np.sqrt(np.sum((data[:, [0, 2]] - [i, j]) ** 2, axis=1))
+        # Find the index of the minimum distance (nearest neighbor)
+        nearest_neighbor_index = np.argmin(distances)
+
+        return data[nearest_neighbor_index]
+
+    def map_to_image(self, triplets, image_size):
+        """
+        Maps triplets of values (X, Y, Z) to a square image using bilinear interpolation.
+
+        Args:
+            triplets: A NumPy array of shape (N, 3) where each row is (X, Y, Z).
+            image_size: The size of the square image (e.g., 256).
+
+        Returns:
+            A 2D NumPy array representing the grayscale image.
+        """
+
+        # Create an empty image
+        image = np.zeros((image_size, image_size))
+
+        # Get min and max values
+        min_x = np.min(triplets[:, 0])
+        max_x = np.max(triplets[:, 0])
+        min_y = np.min(triplets[:, 1])
+        max_y = np.max(triplets[:, 1])
+        min_z = np.min(triplets[:, 2])
+        max_z = np.max(triplets[:, 2])
+
+        print(min_x, max_x, min_y, max_y, min_z, max_z)
+
+        # normalize all triplets coordinates between 0 and 1
+        triplets[:, 0] = (triplets[:, 0] - min_x) / (max_x - min_x)
+        triplets[:, 1] = (triplets[:, 1] - min_y) / (max_y - min_y)
+        triplets[:, 2] = (triplets[:, 2] - min_z) / (max_z - min_z)
+
+        print(triplets)
+
+        # Loop through each pixel in the image
+        for i in range(image_size):
+            for j in range(image_size):
+                # Convert pixel coordinates to normalized coordinates (between 0 and 1)
+                x = (j + 0.5) / image_size
+                y = (i + 0.5) / image_size
+
+                nearest_neighbor_data = self.nearest_neighbor(triplets, x, y)
+
+                print(nearest_neighbor_data)
+
+                # Get the Y value of the nearest neighbor
+                value = nearest_neighbor_data[1]
+
+                # Normalize the value between 0 and 1
+                normalized = value
+
+                image[i, j] = normalized
+
+        return image
