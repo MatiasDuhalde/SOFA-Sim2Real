@@ -1,7 +1,9 @@
 from os import path
 
+from stlib3.physics.rigid import Floor, Sphere
 from stlib3.scene import Scene
 
+from elements.object.object_controller import ObjectController
 from elements.sensor.sensor import Sensor
 
 
@@ -53,7 +55,7 @@ def createScene(rootNode):
     scene.addMainHeader()
 
     # This configures the contact parameters (collision detection and response)
-    scene.addContact(alarmDistance=15e-3, contactDistance=0.5e-3, frictionCoef=0.1)
+    scene.addContact(alarmDistance=5e-3, contactDistance=1e-3, frictionCoef=0.1)
 
     # The default view of the scene on SOFA
     scene.addObject("DefaultVisualManagerLoop")
@@ -93,17 +95,24 @@ def createScene(rootNode):
 
     # scene.Modelling.addChild(coin)
 
-    # sphere = Sphere(
-    #     None,
-    #     name="Sphere",
-    #     translation=[0.0, 40.0, 0.0],
-    #     uniformScale=6.0,
-    #     isAStaticObject=False,
-    #     totalMass=0.032,
-    # )
-    # sphere.addObject("UncoupledConstraintCorrection")
+    sphere = Sphere(
+        None,
+        name="Sphere",
+        translation=[0.0, 0.03, 0.0],
+        uniformScale=0.005,
+        isAStaticObject=False,
+        totalMass=0.032,
+    )
+    sphere.addObject("UncoupledConstraintCorrection")
+    # sphere.collision.TriangleCollisionModel.moving = True
+    # sphere.collision.TriangleCollisionModel.simulated = True
+    # sphere.collision.LineCollisionModel.moving = True
+    # sphere.collision.LineCollisionModel.simulated = True
+    # sphere.collision.PointCollisionModel.moving = True
+    # sphere.collision.PointCollisionModel.simulated = True
+    # sphere.addObject("EulerImplicitSolver")
 
-    # scene.Modelling.addChild(sphere)
+    scene.Modelling.addChild(sphere)
 
     # floor = Floor(
     #     None,
@@ -113,6 +122,12 @@ def createScene(rootNode):
     #     uniformScale=0.1,
     #     isAStaticObject=True,
     # )
+
+    controller = ObjectController(
+        name="SphereController", node=rootNode, object=sphere.mstate
+    )
+
+    scene.addObject(controller)
 
     # scene.Modelling.addChild(floor)
 
