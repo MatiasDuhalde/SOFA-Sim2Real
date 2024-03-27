@@ -76,7 +76,7 @@ def createScene(rootNode):
     scene.Modelling.addChild(sensor)
 
     # Add dynamic parts to the scene
-    # scene.Simulation.addChild(sensor.RigidifiedStructure.DeformableParts)
+    scene.Simulation.addChild(sensor.RigidifiedStructure.DeformableParts)
 
     # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
 

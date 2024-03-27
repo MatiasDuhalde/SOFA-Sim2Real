@@ -78,7 +78,7 @@ class VisualModel(Sofa.Prefab):
             src="@loader",
             rotation=list(self.rotation.value),
             translation=list(self.translation.value),
-            scale3d=list(self.scale.value),
+            # scale3d=list(self.scale.value),
             color=list(self.color.value),
             updateNormals=False,
         )

@@ -57,8 +57,8 @@ class Sensor(Sofa.Prefab):
         ]  # RGBA
 
         self.membraneTotalMass = 0.015  # kg
-        self.membraneYoungModulus = 32e6  # Pa
-        self.membranePoissonRatio = 0.45
+        self.membraneYoungModulus = 35000  # Pa
+        self.membranePoissonRatio = 0.25
 
         # Shell values
         self.shellMeshPath = path.join("..", "data", "mesh", "sensor", "Shell-Low.stl")
@@ -78,13 +78,13 @@ class Sensor(Sofa.Prefab):
         self.shell = self.addShell()
 
         # Fix the membrane in place, by adding a spring force field to the sides
-        # self.fixMembrane()
+        self.fixMembrane()
 
     def fixMembrane(self):
 
-        x_base = 13.5
-        y_base = 19
-        z_base = 11.5
+        x_base = 0.0135
+        y_base = 0.019
+        z_base = 0.0115
         box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
 
         eulerRotation = [0, 0, 0]
@@ -98,7 +98,7 @@ class Sensor(Sofa.Prefab):
                 z_base * math.sin(math.radians(90 * i)),
             ]
 
-            box_scale = [2, 2.5, 30]
+            box_scale = [0.002, 0.002, 0.03]
 
             box = addOrientedBoxRoi(
                 self,
