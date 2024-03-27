@@ -1,7 +1,9 @@
 import math
+from gettext import translation
 from os import path
 
 import Sofa
+from splib3.constants import Key
 from stlib3.components import addOrientedBoxRoi
 from stlib3.physics.collision import CollisionMesh
 from stlib3.physics.mixedmaterial import Rigidify
@@ -80,6 +82,11 @@ class Sensor(Sofa.Prefab):
         # Fix the membrane in place, by adding a spring force field to the sides
         self.fixMembrane()
 
+        # Add a box at the bottom of the membrane to read the index of the bottom nodes
+        self.addBottomBox()
+
+        print(len(self.getMembraneBottomIndexes()))
+
     def fixMembrane(self):
 
         x_base = 0.0135
@@ -122,6 +129,27 @@ class Sensor(Sofa.Prefab):
             groupIndices=indices,
             name="RigidifiedStructure",
         )
+
+    def addBottomBox(self):
+        box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
+
+        box_translation = [0, 0.018, 0]
+        box_scale = [0.04, 0.001, 0.04]
+
+        self.bottom_box = addOrientedBoxRoi(
+            self,
+            position=box_position,
+            name="BottomBoxROI",
+            translation=box_translation,
+            eulerRotation=[0, 0, 0],
+            scale=box_scale,
+            drawBoxes=True,
+        )
+
+        self.bottom_box.init()
+
+    def getMembraneBottomIndexes(self):
+        return [ind for ind in self.bottom_box.indices.value]
 
     def addMembrane(self):
 
@@ -180,3 +208,13 @@ class SensorController(Sofa.Core.Controller):
 
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.node = kwargs["node"]
+        self.sensor = kwargs["sensor"]
+
+    def onKeypressedEvent(self, event):
+        key = event["key"]
+        if key == Key.P:
+            print("P key pressed")
+            indexes = self.sensor.getMembraneBottomIndexes()
+            print(len(indexes))

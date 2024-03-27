@@ -4,7 +4,7 @@ from stlib3.physics.rigid import Floor, Sphere
 from stlib3.scene import Scene
 
 from elements.object.object_controller import ObjectController
-from elements.sensor.sensor import Sensor
+from elements.sensor.sensor import Sensor, SensorController
 
 
 def createScene(rootNode):
@@ -79,6 +79,19 @@ def createScene(rootNode):
 
     # Add dynamic parts to the scene
     scene.Simulation.addChild(sensor.RigidifiedStructure.DeformableParts)
+
+    # Add controller
+    scene.addObject(
+        SensorController(name="SensorController", sensor=sensor, node=rootNode)
+    )
+
+    # Add static camera to look at the bottom of the sensor
+    scene.addObject(
+        "Camera",
+        position=[0.0, 0.1, 0.0],
+        orientation=[0.0, 0.0, 0.0],
+        fieldOfView=90.0,
+    )
 
     # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
 
