@@ -1,6 +1,7 @@
 import math
 from gettext import translation
 from os import path
+import pathlib
 
 import numpy as np
 import Sofa
@@ -81,16 +82,36 @@ class Sensor(Sofa.Prefab):
         # Add the shell of the sensor (only visual model)
         self.shell = self.addShell()
 
+        # Add a box at the top of the membrane to read the indexes of the top nodes
+        self.top_box = self.addTopBoundingBox()
+
         # Fix the membrane in place, by adding a spring force field to the sides
         self.fixMembrane()
 
-        # Add a box at the bottom of the membrane to read the index of the bottom nodes
-        self.addBottomBox()
 
-        print(len(self.getMembraneBottomIndexes()))
+        print(len(self.getMembraneSurfaceIndexes()))
 
-    def fixMembrane(self):
+    def addBottomBoundingBox(self):
+        box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
 
+        box_translation = [0, 0.018, 0]
+        box_scale = [0.04, 0.001, 0.04]
+
+        box = addOrientedBoxRoi(
+            self,
+            position=box_position,
+            name="BottomBoxROI",
+            translation=box_translation,
+            eulerRotation=[0, 0, 0],
+            scale=box_scale,
+            drawBoxes=True,
+        )
+
+        box.init()
+
+        return box
+        
+    def addSidesBoundingBoxes(self):
         x_base = 0.0135
         y_base = 0.019
         z_base = 0.0115
@@ -98,7 +119,7 @@ class Sensor(Sofa.Prefab):
 
         eulerRotation = [0, 0, 0]
 
-        indices = []
+        boxes = []
 
         for i in range(4):
             box_translation = [
@@ -123,7 +144,14 @@ class Sensor(Sofa.Prefab):
 
             box.init()
 
-            indices.append([ind for ind in box.indices.value])
+            boxes.append(box)
+
+        return boxes      
+
+    def fixMembrane(self):
+        self.bottom_box = self.addBottomBoundingBox()
+
+        indices = [[ind for ind in self.bottom_box.indices.value]]
 
         rigidifiedStruct = Rigidify(
             targetObject=self,
@@ -132,13 +160,13 @@ class Sensor(Sofa.Prefab):
             name="RigidifiedStructure",
         )
 
-    def addBottomBox(self):
+    def addTopBoundingBox(self):
         box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
 
-        box_translation = [0, 0.018, 0]
-        box_scale = [0.04, 0.001, 0.04]
+        box_translation = [0, 0.023, 0]
+        box_scale = [0.04, 0.0015, 0.04]
 
-        self.bottom_box = addOrientedBoxRoi(
+        box = addOrientedBoxRoi(
             self,
             position=box_position,
             name="BottomBoxROI",
@@ -148,10 +176,12 @@ class Sensor(Sofa.Prefab):
             drawBoxes=True,
         )
 
-        self.bottom_box.init()
+        box.init()
 
-    def getMembraneBottomIndexes(self):
-        return [ind for ind in self.bottom_box.indices.value]
+        return box
+
+    def getMembraneSurfaceIndexes(self):
+        return [ind for ind in self.top_box.indices.value]
 
     def addMembrane(self):
 
@@ -215,21 +245,22 @@ class SensorController(Sofa.Core.Controller):
         self.sensor = kwargs["sensor"]
 
     def onKeypressedEvent(self, event):
+        output_path = pathlib.Path(__file__).parent.parent.parent.resolve()
         key = event["key"]
         if key == Key.P:
             print("P key pressed")
-            indexes = self.sensor.getMembraneBottomIndexes()
+            indexes = self.sensor.getMembraneSurfaceIndexes()
             positions = self.sensor.Membrane.Membrane.dofs.position.value
-            bottomValues = [positions[i] for i in indexes]
+            surfaceValues = [positions[i] for i in indexes]
             # Dump to file
-            with open("depth_map_points.txt", "w") as f:
-                for item in bottomValues:
+            with open(path.join(output_path, "depth_map_points.txt"), "w") as f:
+                for item in surfaceValues:
                     f.write(",".join([str(i) for i in item]) + "\n")
 
             # Generate depth map
-            depth_map = self.map_to_image(np.array(bottomValues), 256)
+            depth_map = self.map_to_image(np.array(surfaceValues), 256)
             depth_map = Image.fromarray((depth_map * 255).astype(np.uint8))
-            depth_map.save("depth_map.png")
+            depth_map.save(path.join(output_path, "depth_map.png"))
 
     def nearest_neighbor(self, data, i, j):
         """
@@ -243,7 +274,6 @@ class SensorController(Sofa.Core.Controller):
         Returns:
             A tuple containing the (X, Y, Z) values of the nearest neighbor.
         """
-        print(i, j)
         # Calculate Euclidean distances between the point and all triplets
         distances = np.sqrt(np.sum((data[:, [0, 2]] - [i, j]) ** 2, axis=1))
         # Find the index of the minimum distance (nearest neighbor)
@@ -274,14 +304,10 @@ class SensorController(Sofa.Core.Controller):
         min_z = np.min(triplets[:, 2])
         max_z = np.max(triplets[:, 2])
 
-        print(min_x, max_x, min_y, max_y, min_z, max_z)
-
         # normalize all triplets coordinates between 0 and 1
         triplets[:, 0] = (triplets[:, 0] - min_x) / (max_x - min_x)
         triplets[:, 1] = (triplets[:, 1] - min_y) / (max_y - min_y)
         triplets[:, 2] = (triplets[:, 2] - min_z) / (max_z - min_z)
-
-        print(triplets)
 
         # Loop through each pixel in the image
         for i in range(image_size):
@@ -291,8 +317,6 @@ class SensorController(Sofa.Core.Controller):
                 y = (i + 0.5) / image_size
 
                 nearest_neighbor_data = self.nearest_neighbor(triplets, x, y)
-
-                print(nearest_neighbor_data)
 
                 # Get the Y value of the nearest neighbor
                 value = nearest_neighbor_data[1]
