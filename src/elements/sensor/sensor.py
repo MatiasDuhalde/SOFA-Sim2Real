@@ -1,7 +1,7 @@
 import math
+import pathlib
 from gettext import translation
 from os import path
-import pathlib
 
 import numpy as np
 import Sofa
@@ -10,6 +10,16 @@ from splib3.constants import Key
 from stlib3.components import addOrientedBoxRoi
 from stlib3.physics.collision import CollisionMesh
 from stlib3.physics.mixedmaterial import Rigidify
+
+from params import (
+    DEPTH_MAP_KEY,
+    MEMBRANE_POISSON_RATIO,
+    MEMBRANE_SURFACE_MESH_PATH,
+    MEMBRANE_TOTAL_MASS,
+    MEMBRANE_VOLUME_MESH_PATH,
+    MEMBRANE_YOUNG_MODULUS,
+    SHELL_MESH_PATH,
+)
 
 from .elasticmaterialobject import ElasticMaterialObject
 from .fixing_box import FixingBox
@@ -44,12 +54,8 @@ class Sensor(Sofa.Prefab):
     def init(self):
 
         # Membrane values
-        self.membraneVolumeMeshPath = path.join(
-            "..", "data", "mesh", "sensor", "Low-Even-Mesh.msh"
-        )
-        self.membraneSurfaceMeshPath = path.join(
-            "..", "data", "mesh", "sensor", "Low-Even-Mesh.stl"
-        )
+        self.membraneVolumeMeshPath = MEMBRANE_VOLUME_MESH_PATH
+        self.membraneSurfaceMeshPath = MEMBRANE_SURFACE_MESH_PATH
 
         self.membraneRotation = [0.0, 0.0, 0.0]
         self.membraneTranslation = [0.0, 0.0, 0.0]
@@ -61,12 +67,12 @@ class Sensor(Sofa.Prefab):
             1.0,
         ]  # RGBA
 
-        self.membraneTotalMass = 0.015  # kg
-        self.membraneYoungModulus = 35000  # Pa
-        self.membranePoissonRatio = 0.25
+        self.membraneTotalMass = MEMBRANE_TOTAL_MASS
+        self.membraneYoungModulus = MEMBRANE_YOUNG_MODULUS
+        self.membranePoissonRatio = MEMBRANE_POISSON_RATIO
 
         # Shell values
-        self.shellMeshPath = path.join("..", "data", "mesh", "sensor", "Shell-Low.stl")
+        self.shellMeshPath = SHELL_MESH_PATH
 
         self.shellRotation = [0.0, 0.0, 0.0]
         self.shellTranslation = [0.0, 0.0, 0.0]
@@ -87,7 +93,6 @@ class Sensor(Sofa.Prefab):
 
         # Fix the membrane in place, by adding a spring force field to the sides
         self.fixMembrane()
-
 
         print(len(self.getMembraneSurfaceIndexes()))
 
@@ -110,7 +115,7 @@ class Sensor(Sofa.Prefab):
         box.init()
 
         return box
-        
+
     def addSidesBoundingBoxes(self):
         x_base = 0.0135
         y_base = 0.019
@@ -146,7 +151,7 @@ class Sensor(Sofa.Prefab):
 
             boxes.append(box)
 
-        return boxes      
+        return boxes
 
     def fixMembrane(self):
         self.bottom_box = self.addBottomBoundingBox()
@@ -247,7 +252,7 @@ class SensorController(Sofa.Core.Controller):
     def onKeypressedEvent(self, event):
         output_path = pathlib.Path(__file__).parent.parent.parent.resolve()
         key = event["key"]
-        if key == Key.P:
+        if key == DEPTH_MAP_KEY:
             print("P key pressed")
             indexes = self.sensor.getMembraneSurfaceIndexes()
             positions = self.sensor.Membrane.Membrane.dofs.position.value
