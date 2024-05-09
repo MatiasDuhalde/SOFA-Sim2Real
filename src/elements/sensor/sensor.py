@@ -1,28 +1,28 @@
 import math
 import pathlib
-from gettext import translation
 from os import path
 
 import numpy as np
 import Sofa
 from PIL import Image
-from splib3.constants import Key
 from stlib3.components import addOrientedBoxRoi
-from stlib3.physics.collision import CollisionMesh
 from stlib3.physics.mixedmaterial import Rigidify
 
 from params import (
     DEPTH_MAP_KEY,
+    IMAGE_FILE_NAME,
     MEMBRANE_POISSON_RATIO,
     MEMBRANE_SURFACE_MESH_PATH,
     MEMBRANE_TOTAL_MASS,
     MEMBRANE_VOLUME_MESH_PATH,
     MEMBRANE_YOUNG_MODULUS,
+    OUTPUT_IMAGE_SIZE,
+    OUTPUT_PATH,
+    POINTS_FILE_NAME,
     SHELL_MESH_PATH,
 )
 
 from .elasticmaterialobject import ElasticMaterialObject
-from .fixing_box import FixingBox
 
 
 class Sensor(Sofa.Prefab):
@@ -80,23 +80,28 @@ class Sensor(Sofa.Prefab):
         self.shellColor = [1.0, 1.0, 1.0, 1.0]  # RGBA
 
         # Create the elastic part of the sensor
-        self.membrane = self.addMembrane()
+        self.membrane = self.add_membrane()
 
         # Initialize the elastic body to eagerly compute positions
         self.Membrane.init()
 
+        # Save the membrane's collision model
+        self.collision_model = self.membrane.CollisionModel
+
         # Add the shell of the sensor (only visual model)
-        self.shell = self.addShell()
+        self.shell = self.add_shell()
 
-        # Add a box at the top of the membrane to read the indexes of the top nodes
-        self.top_box = self.addTopBoundingBox()
+        self.top_box = self.add_top_bounding_box()
 
-        # Fix the membrane in place, by adding a spring force field to the sides
-        self.fixMembrane()
+        # Save indexes of the top nodes
+        self.top_indexes = [ind for ind in self.top_box.indices.value]
 
-        print(len(self.getMembraneSurfaceIndexes()))
+        self.fix_membrane()
 
-    def addBottomBoundingBox(self):
+    def add_bottom_bounding_box(self):
+        """
+        Add a box at the bottom of the membrane to fix it in place, simulating the contact with the acrylic window.
+        """
         box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
 
         box_translation = [0, 0.018, 0]
@@ -116,7 +121,10 @@ class Sensor(Sofa.Prefab):
 
         return box
 
-    def addSidesBoundingBoxes(self):
+    def add_sides_bounding_boxes(self):
+        """
+        Add bounding boxes to the sides of the membrane to fix them in place, simulating the borders of the sensor.
+        """
         x_base = 0.0135
         y_base = 0.019
         z_base = 0.0115
@@ -153,8 +161,11 @@ class Sensor(Sofa.Prefab):
 
         return boxes
 
-    def fixMembrane(self):
-        self.bottom_box = self.addBottomBoundingBox()
+    def fix_membrane(self):
+        """
+        Fix the membrane in place by adding a spring force field to the sides of the membrane.
+        """
+        self.bottom_box = self.add_bottom_bounding_box()
 
         indices = [[ind for ind in self.bottom_box.indices.value]]
 
@@ -165,8 +176,13 @@ class Sensor(Sofa.Prefab):
             name="RigidifiedStructure",
         )
 
-    def addTopBoundingBox(self):
-        box_position = [list(i) for i in self.membrane.dofs.rest_position.value]
+    def add_top_bounding_box(self):
+        """
+        Add a box at the top of the membrane to read the indexes of the top nodes
+        """
+        collision_model_vertices = self.collision_model.dofs.rest_position.value
+
+        box_position = [list(i) for i in collision_model_vertices]
 
         box_translation = [0, 0.023, 0]
         box_scale = [0.04, 0.0015, 0.04]
@@ -185,10 +201,10 @@ class Sensor(Sofa.Prefab):
 
         return box
 
-    def getMembraneSurfaceIndexes(self):
-        return [ind for ind in self.top_box.indices.value]
+    def get_membrane_surface_positions(self):
+        return [self.collision_model.dofs.position.value[i] for i in self.top_indexes]
 
-    def addMembrane(self):
+    def add_membrane(self):
 
         # Create the membrane as a child of the parent
         membrane = self.addChild("Membrane")
@@ -212,7 +228,7 @@ class Sensor(Sofa.Prefab):
 
         return membrane.addChild(elasticMaterial)
 
-    def addShell(self):
+    def add_shell(self):
 
         shell = self.addChild("Shell")
 
@@ -235,9 +251,6 @@ class Sensor(Sofa.Prefab):
             "OglModel", src=visual.loader.getLinkPath(), color=self.shellColor
         )
 
-        # Mapping between the shell and the visual model
-        # visual.addObject("RigidMapping")
-
         return shell
 
 
@@ -250,22 +263,37 @@ class SensorController(Sofa.Core.Controller):
         self.sensor = kwargs["sensor"]
 
     def onKeypressedEvent(self, event):
-        output_path = pathlib.Path(__file__).parent.parent.parent.resolve()
         key = event["key"]
         if key == DEPTH_MAP_KEY:
-            print("P key pressed")
-            indexes = self.sensor.getMembraneSurfaceIndexes()
-            positions = self.sensor.Membrane.Membrane.dofs.position.value
-            surfaceValues = [positions[i] for i in indexes]
-            # Dump to file
-            with open(path.join(output_path, "depth_map_points.txt"), "w") as f:
-                for item in surfaceValues:
-                    f.write(",".join([str(i) for i in item]) + "\n")
+            print("Capturing depth map...")
+            self.capture_depth_map()
+            print("Depth map captured")
 
-            # Generate depth map
-            depth_map = self.map_to_image(np.array(surfaceValues), 256)
-            depth_map = Image.fromarray((depth_map * 255).astype(np.uint8))
-            depth_map.save(path.join(output_path, "depth_map.png"))
+    def capture_depth_map(self):
+        surface_positions = self.sensor.get_membrane_surface_positions()
+
+        self.create_output_directory()
+
+        self.save_depth_map_points(surface_positions)
+
+        depth_map_array = self.map_to_image(
+            np.array(surface_positions), OUTPUT_IMAGE_SIZE
+        )
+        self.save_depth_map_image(depth_map_array)
+
+    def create_output_directory(self):
+        pathlib.Path(OUTPUT_PATH).mkdir(parents=True, exist_ok=True)
+
+    def save_depth_map_points(self, surface_positions):
+        file_path = path.join(OUTPUT_PATH, POINTS_FILE_NAME)
+        with open(file_path, "w") as f:
+            for item in surface_positions:
+                f.write(",".join([str(i) for i in item]) + "\n")
+
+    def save_depth_map_image(self, depth_map_array):
+        file_path = path.join(OUTPUT_PATH, IMAGE_FILE_NAME)
+        depth_map_image = Image.fromarray((depth_map_array * 255).astype(np.uint8))
+        depth_map_image.save(file_path)
 
     def nearest_neighbor(self, data, i, j):
         """
@@ -288,18 +316,18 @@ class SensorController(Sofa.Core.Controller):
 
     def map_to_image(self, triplets, image_size):
         """
-        Maps triplets of values (X, Y, Z) to a square image using bilinear interpolation.
+        Maps triplets of values (X, Y, Z) to an image using bilinear interpolation.
 
         Args:
             triplets: A NumPy array of shape (N, 3) where each row is (X, Y, Z).
-            image_size: The size of the square image (e.g., 256).
+            image_size: The size of the image (e.g., (101, 83)).
 
         Returns:
             A 2D NumPy array representing the grayscale image.
         """
 
         # Create an empty image
-        image = np.zeros((image_size, image_size))
+        image = np.zeros(image_size)
 
         # Get min and max values
         min_x = np.min(triplets[:, 0])
@@ -315,11 +343,11 @@ class SensorController(Sofa.Core.Controller):
         triplets[:, 2] = (triplets[:, 2] - min_z) / (max_z - min_z)
 
         # Loop through each pixel in the image
-        for i in range(image_size):
-            for j in range(image_size):
+        for i in range(image_size[0]):
+            for j in range(image_size[1]):
                 # Convert pixel coordinates to normalized coordinates (between 0 and 1)
-                x = (j + 0.5) / image_size
-                y = (i + 0.5) / image_size
+                x = (j + 0.5) / image_size[1]
+                y = (i + 0.5) / image_size[0]
 
                 nearest_neighbor_data = self.nearest_neighbor(triplets, x, y)
 

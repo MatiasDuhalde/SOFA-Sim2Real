@@ -21,3 +21,9 @@ MEMBRANE_VOLUME_MESH_PATH = path.join(
 # )
 
 SHELL_MESH_PATH = path.join("..", "data", "mesh", "sensor", "Shell-Low.stl")
+
+OUTPUT_PATH = path.join("..", "output")
+POINTS_FILE_NAME = "depth_map_points.txt"
+IMAGE_FILE_NAME = "depth_map_image.png"
+
+OUTPUT_IMAGE_SIZE = (101, 83)
