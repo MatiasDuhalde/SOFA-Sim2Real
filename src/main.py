@@ -3,6 +3,7 @@ from os import path
 from stlib3.physics.rigid import Floor, Sphere
 from stlib3.scene import Scene
 
+from elements.object.object import Object
 from elements.object.object_controller import ObjectController
 from elements.sensor.sensor import Sensor, SensorController
 
@@ -85,17 +86,6 @@ def createScene(rootNode):
         SensorController(name="SensorController", sensor=sensor, node=rootNode)
     )
 
-    # # Add interactive camera
-    # scene.addObject(
-    #     "InteractiveCamera",
-    #     position=[0.0, 0.0, 0.0],
-    #     orientation=[0.0, 0.0, 0.0, 1.0],
-    #     distance=[0.0, 0.0, 0.0],
-    #     fieldOfView=45.0,
-    #     zNear=0.0,
-    #     zFar=0.0,
-    # )
-
     # # Add static camera to look at the bottom of the sensor
     # scene.addObject(
     #     "Camera",
@@ -105,7 +95,6 @@ def createScene(rootNode):
     #     fieldOfView=90.0,
     #     projectionType="Orthographic",
     # )
-
     # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
 
     # coin = Object(
@@ -116,20 +105,30 @@ def createScene(rootNode):
     #     color=[219.0 / 255.0, 172.0 / 255.0, 52.0 / 255.0, 1.0],
     #     isStatic=False,
     # )
-
     # coin.addObject("UncoupledConstraintCorrection")
-
     # scene.Modelling.addChild(coin)
 
-    sphere = Sphere(
-        None,
-        name="Sphere",
+    star = Object(
+        name="Star",
+        meshPath="../data/mesh/star/star.stl",
+        rotation=[-90.0, 0.0, 0.0],
         translation=[0.0, 0.03, 0.0],
-        uniformScale=0.005,
-        isAStaticObject=False,
-        totalMass=0.032,
+        scale3d=[0.0075, 0.0075, 0.0075],
+        color=[1.0, 1.0, 0.0, 1.0],
+        isStatic=False,
     )
-    sphere.addObject("UncoupledConstraintCorrection")
+    star.addObject("UncoupledConstraintCorrection")
+    scene.Modelling.addChild(star)
+
+    # sphere = Sphere(
+    #     None,
+    #     name="Sphere",
+    #     translation=[0.0, 0.03, 0.0],
+    #     uniformScale=0.005,
+    #     isAStaticObject=False,
+    #     totalMass=0.032,
+    # )
+    # sphere.addObject("UncoupledConstraintCorrection")
     # sphere.collision.TriangleCollisionModel.moving = True
     # sphere.collision.TriangleCollisionModel.simulated = True
     # sphere.collision.LineCollisionModel.moving = True
@@ -138,16 +137,7 @@ def createScene(rootNode):
     # sphere.collision.PointCollisionModel.simulated = True
     # sphere.addObject("EulerImplicitSolver")
 
-    scene.Modelling.addChild(sphere)
-
-    # floor = Floor(
-    #     None,
-    #     name="FloorObstacle",
-    #     translation=[0.0, 0.0, 0.0],
-    #     color=[0.0, 1.0, 0.0, 1.0],
-    #     uniformScale=0.1,
-    #     isAStaticObject=True,
-    # )
+    # scene.Modelling.addChild(sphere)
 
     # controller = ObjectController(
     #     name="SphereController", node=rootNode, object=sphere.mstate

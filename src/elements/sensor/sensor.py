@@ -190,7 +190,7 @@ class Sensor(Sofa.Prefab):
         box = addOrientedBoxRoi(
             self,
             position=box_position,
-            name="BottomBoxROI",
+            name="TopBoxROI",
             translation=box_translation,
             eulerRotation=[0, 0, 0],
             scale=box_scale,
@@ -320,7 +320,7 @@ class SensorController(Sofa.Core.Controller):
 
         Args:
             triplets: A NumPy array of shape (N, 3) where each row is (X, Y, Z).
-            image_size: The size of the image (e.g., (101, 83)).
+            image_size: The size of the image (e.g., (83, 101)).
 
         Returns:
             A 2D NumPy array representing the grayscale image.
