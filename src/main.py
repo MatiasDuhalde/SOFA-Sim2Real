@@ -6,12 +6,85 @@ from stlib3.scene import Scene
 from elements.object.object import Object
 from elements.object.object_controller import ObjectController
 from elements.sensor.sensor import Sensor, SensorController
+from params import ALARM_DISTANCE, ANGLE_CONE, CONTACT_DISTANCE, FRICTION_COEF
+
+
+def add_star(scene):
+    star = Object(
+        name="Star",
+        meshPath="../data/mesh/star/star.stl",
+        rotation=[0.0, 45.0, 0.0],
+        translation=[0.0, 0.03, 0.0],
+        scale3d=[0.0075, 0.0075, 0.0075],
+        color=[1.0, 1.0, 0.0, 1.0],
+        isStatic=False,
+    )
+    star.addObject("UncoupledConstraintCorrection")
+    scene.Modelling.addChild(star)
+    return star
+
+
+def add_coin(scene):
+    coin = Object(
+        name="Coin",
+        meshPath="../data/mesh/coin/One-Euro.stl",
+        rotation=[-90.0, 0.0, 0.0],
+        translation=[0.0, 20.0, 0.0],
+        color=[219.0 / 255.0, 172.0 / 255.0, 52.0 / 255.0, 1.0],
+        isStatic=False,
+    )
+    coin.addObject("UncoupledConstraintCorrection")
+    scene.Modelling.addChild(coin)
+    return coin
+
+
+def add_sphere(scene):
+    sphere = Sphere(
+        None,
+        name="Sphere",
+        translation=[0.0, 0.03, 0.0],
+        uniformScale=0.005,
+        isAStaticObject=False,
+        totalMass=0.064,
+    )
+    sphere.addObject("UncoupledConstraintCorrection")
+    scene.Modelling.addChild(sphere)
+    return sphere
+
+
+def add_monkey(scene):
+    monkey = Object(
+        name="monkey",
+        meshPath="../data/mesh/monkey/monkey.stl",
+        rotation=[0.0, 90.0, 0.0],
+        translation=[0.0, 0.035, 0.0],
+        scale3d=[0.0075, 0.0075, 0.0075],
+        color=[1.0, 1.0, 0.0, 1.0],
+        totalMass=0.25,
+        isStatic=False,
+    )
+    monkey.addObject("UncoupledConstraintCorrection")
+    scene.Modelling.addChild(monkey)
+    return monkey
+
+
+def set_internal_camera(scene):
+    """Add static camera to look at the bottom of the sensor"""
+    scene.addObject(
+        "Camera",
+        position=[90.0, 0.0, 0.0],
+        orientation=[90.0, 0.0, 0.0, 1.0],
+        distance=[0.0, 0.0, 0.0],
+        fieldOfView=90.0,
+        projectionType="Orthographic",
+    )
 
 
 def createScene(rootNode):
 
     # The list of plugins this simulation requires
     plugins = [
+        "MultiThreading",
         "Sofa.Component.AnimationLoop",
         "Sofa.Component.Collision.Detection.Algorithm",
         "Sofa.Component.Collision.Detection.Intersection",
@@ -56,7 +129,13 @@ def createScene(rootNode):
     scene.addMainHeader()
 
     # This configures the contact parameters (collision detection and response)
-    scene.addContact(alarmDistance=5e-3, contactDistance=1e-3, frictionCoef=0.1)
+    scene.addContact(
+        alarmDistance=ALARM_DISTANCE,
+        contactDistance=CONTACT_DISTANCE,
+        frictionCoef=FRICTION_COEF,
+    )
+
+    scene.LocalMinDistance.angleCone = ANGLE_CONE
 
     # The default view of the scene on SOFA
     scene.addObject("DefaultVisualManagerLoop")
@@ -64,7 +143,7 @@ def createScene(rootNode):
     # We configure the initial flags for the visual representation of the scene
     scene.VisualStyle.displayFlags = [
         "hideVisual",
-        "showBehavior",
+        "showInteractionForceFields",
         "showCollisionModels",
     ]
 
@@ -86,65 +165,12 @@ def createScene(rootNode):
         SensorController(name="SensorController", sensor=sensor, node=rootNode)
     )
 
-    # # Add static camera to look at the bottom of the sensor
-    # scene.addObject(
-    #     "Camera",
-    #     position=[90.0, 0.0, 0.0],
-    #     orientation=[90.0, 0.0, 0.0, 1.0],
-    #     distance=[0.0, 0.0, 0.0],
-    #     fieldOfView=90.0,
-    #     projectionType="Orthographic",
-    # )
-    # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
-
-    # coin = Object(
-    #     name="Coin",
-    #     meshPath="../data/mesh/coin/One-Euro.stl",
-    #     rotation=[-90.0, 0.0, 0.0],
-    #     translation=[0.0, 20.0, 0.0],
-    #     color=[219.0 / 255.0, 172.0 / 255.0, 52.0 / 255.0, 1.0],
-    #     isStatic=False,
-    # )
-    # coin.addObject("UncoupledConstraintCorrection")
-    # scene.Modelling.addChild(coin)
-
-    star = Object(
-        name="Star",
-        meshPath="../data/mesh/star/star.stl",
-        rotation=[-90.0, 0.0, 0.0],
-        translation=[0.0, 0.03, 0.0],
-        scale3d=[0.0075, 0.0075, 0.0075],
-        color=[1.0, 1.0, 0.0, 1.0],
-        isStatic=False,
-    )
-    star.addObject("UncoupledConstraintCorrection")
-    scene.Modelling.addChild(star)
-
-    # sphere = Sphere(
-    #     None,
-    #     name="Sphere",
-    #     translation=[0.0, 0.03, 0.0],
-    #     uniformScale=0.005,
-    #     isAStaticObject=False,
-    #     totalMass=0.032,
-    # )
-    # sphere.addObject("UncoupledConstraintCorrection")
-    # sphere.collision.TriangleCollisionModel.moving = True
-    # sphere.collision.TriangleCollisionModel.simulated = True
-    # sphere.collision.LineCollisionModel.moving = True
-    # sphere.collision.LineCollisionModel.simulated = True
-    # sphere.collision.PointCollisionModel.moving = True
-    # sphere.collision.PointCollisionModel.simulated = True
-    # sphere.addObject("EulerImplicitSolver")
-
-    # scene.Modelling.addChild(sphere)
+    add_monkey(scene)
 
     # controller = ObjectController(
     #     name="SphereController", node=rootNode, object=sphere.mstate
     # )
-
     # scene.addObject(controller)
-
-    # scene.Modelling.addChild(floor)
+    # scene.Simulation.TimeIntegrationSchema.rayleighStiffness = 0.005
 
     return rootNode
