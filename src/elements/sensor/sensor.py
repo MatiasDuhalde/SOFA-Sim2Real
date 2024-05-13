@@ -316,7 +316,7 @@ class SensorController(Sofa.Core.Controller):
 
     def map_to_image(self, triplets, image_size):
         """
-        Maps triplets of values (X, Y, Z) to an image using bilinear interpolation.
+        Maps triplets of values (X, Y, Z) to an image using a nearest neighbor strategy.
 
         Args:
             triplets: A NumPy array of shape (N, 3) where each row is (X, Y, Z).
